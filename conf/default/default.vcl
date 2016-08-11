@@ -6,7 +6,6 @@ backend default {
 }
 
 acl refresh {
-   "varnish_master";
    "localhost";
    "127.0.0.1";
 }
