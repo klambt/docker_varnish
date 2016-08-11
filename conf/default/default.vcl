@@ -1,7 +1,7 @@
 vcl 4.0;
 
 backend default {
-  .host = "backend";
+  .host = "backend-app";
   .port = "80";
 }
 
