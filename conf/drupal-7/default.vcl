@@ -2,6 +2,7 @@ vcl 4.0;
 include "backend.vcl";
 include "acl_refresh.vcl";
 include "error.vcl";
+include "basic.vcl";
 
 ###########################################
 #      Respond to incoming Requests       #
@@ -23,16 +24,62 @@ sub vcl_recv {
     return(pipe);
   }
 
+  call normalise_requests;
+
   # We only deal with GET and HEAD by default
   if (req.method != "GET" && req.method != "HEAD") {
     return (pass);
   }
+
+  if (req.http.Cookie ~ "(SESS[a-z0-9]+|SSESS[a-z0-9]+|NO_CACHE)") {
+       // If there is any cookies left (a session or NO_CACHE cookie), do not
+       // cache the page. Pass it on to Apache directly.
+       set req.http.X-Varnish-Info = "Session Cookie available";
+       return (pass);
+  }
+
+  ##
+  #  Non Cachable 
+  ##
+  if (req.url ~ "^/status\.php$" ||
+      req.url ~ "^/update\.php$" ||
+      req.url ~ "^/install\.php$" ||
+      req.url ~ "^/cron\.php$" ||
+      req.url ~ "^/admin$" ||
+      req.url ~ "^/admin/.*$" ||
+      req.url ~ "^/admin_menu/.*$" ||
+      req.url ~ "^/flag/.*$" ||
+      req.url ~ "^.*/ajax/.*$" ||
+      req.url ~ "^.*/ahah/.*$" 
+      ) {
+        set req.http.X-Varnish-Info = "URL not cachable";
+        return (pass);
+    }
 
   return (hash);
 }
 
 sub vcl_backend_fetch {
   return (fetch);
+}
+
+sub vcl_backend_response {
+    //unset cookies for static content
+    if (bereq.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
+        unset beresp.http.set-cookie;
+        if (beresp.status == 200) {
+           set beresp.grace = 7d;
+        }
+    }
+
+    set beresp.do_esi = true;
+    unset beresp.http.Via;
+    unset beresp.http.Server;
+    unset beresp.http.X-Generator;
+    unset beresp.http.X-Varnish;
+    unset beresp.http.X-Powered-By;
+    unset beresp.http.X-BLOCK-CACHE;
+    return (deliver);
 }
 
 sub vcl_pass {

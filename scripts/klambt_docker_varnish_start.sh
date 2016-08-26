@@ -2,7 +2,6 @@
 
 klambt_docker_varnish_configure.sh
 
-
 set -e
 
 exec bash -c \

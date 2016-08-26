@@ -6,6 +6,8 @@ ENV VCL_CONFIG      /etc/varnish/default.vcl
 ENV CACHE_SIZE      64m
 ENV VARNISHD_PARAMS -a :80 -T :6082 -p max_esi_depth=10 -p default_ttl=3600 -p default_grace=3600 -p default_grace=180 -p feature=+esi_disable_xml_check -S /etc/varnish/secret 
 ENV UPDATE_DEBIAN   1
+ENV BACKEND_SERVER  webserver
+ENV BACKEND_STYLE   default
 
 COPY  ./scripts/* /usr/local/bin/
 ADD ./conf/ /root/varnish-conf/

@@ -11,7 +11,8 @@ else
 fi
 
 cp -R /root/varnish-conf/default/* /etc/varnish/
-
+cd /etc/varnish/
+grep -rl --include=*.vcl BACKEND_SERVER_ENVIRONMENT ./ | xargs sed -i -e "s/BACKEND_SERVER_ENVIRONMENT/$BACKEND_SERVER/g"
 
 printf "Varnish Secret: ";
 cat /etc/varnish/secret
