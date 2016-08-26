@@ -1,7 +1,7 @@
 vcl 4.0;
 
 backend default {
-  .host = "backend-app";
+  .host = "drupal_webserver";
   .port = "80";
 }
 
