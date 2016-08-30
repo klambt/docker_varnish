@@ -10,7 +10,7 @@ else
     fi
 fi
 
-cp -R /root/varnish-conf/default/* /etc/varnish/
+cp -R /root/varnish-conf/$BACKEND_STYLE/* /etc/varnish/
 cd /etc/varnish/
 grep -rl --include=*.vcl BACKEND_SERVER_ENVIRONMENT ./ | xargs sed -i -e "s/BACKEND_SERVER_ENVIRONMENT/$BACKEND_SERVER/g"
 
