@@ -120,7 +120,7 @@ sub vcl_backend_error {
     set beresp.http.Retry-After = "5";
     set beresp.ttl = 15s;
 
-    if (bereq.url ~ "/(esi|sitemap|rss|adtags)" || bereq.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") { 
+    if (bereq.url ~ "/(esi|sitemap|rss|adtags)") { 
        synthetic(beresp.status);
     }
 
@@ -129,7 +129,7 @@ sub vcl_backend_error {
 }
 
 sub vcl_synth {
-    if (req.url ~ "/(esi|sitemap|rss|adtags)" || req.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
+    if (req.url ~ "/(esi|sitemap|rss|adtags)") {
        if (resp.status>=400 && resp.status<=599) {
             set resp.http.Content-Type = "text/html; charset=utf-8";
             set resp.http.Retry-After = "5";
