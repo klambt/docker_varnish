@@ -11,6 +11,9 @@ include "basic.vcl";
 
 # Respond to incoming requests.
 sub vcl_recv {
+  //If you are running Varnish, protecting against the HTTPOXY CGI vulnerability is a simple as:
+  unset req.http.proxy;
+
   if (req.method == "PURGE") {
     if (client.ip !~ refresh) {
       return (synth(405,"Not Allowed"));
@@ -72,7 +75,16 @@ sub vcl_backend_response {
         }
     }
 
-    set beresp.do_esi = true;
+   if (bereq.url ~ "/(esi|sitemap|rss|adtags)") {
+     if (beresp.status >= 400) {
+         set beresp.ttl = 60s;
+         return (abandon);
+     }
+   }    
+
+    if (beresp.status == 200) {
+        set beresp.do_esi = true;
+    }
     unset beresp.http.Via;
     unset beresp.http.Server;
     unset beresp.http.X-Generator;
@@ -108,25 +120,29 @@ sub vcl_backend_error {
     set beresp.http.Retry-After = "5";
     set beresp.ttl = 15s;
 
-    if (bereq.url ~ "/(esi|sitemap|rss)" || bereq.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") { 
+    if (bereq.url ~ "/(esi|sitemap|rss|adtags)" || bereq.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") { 
        synthetic(beresp.status);
-       return (deliver);
     }
 
     call backend_error;
     return (deliver);
 }
 
-sub vcl_synth {        
+sub vcl_synth {
+    if (req.url ~ "/(esi|sitemap|rss|adtags)" || req.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
+       if (resp.status>=400 && resp.status<=599) {
+            set resp.http.Content-Type = "text/html; charset=utf-8";
+            set resp.http.Retry-After = "5";
+            set resp.http.Cache-Control = "Cache-Control: max-age=60";
+            synthetic({"<span class="varnish_error_info">CERROR:"}+resp.status+{"</span>"});
+            return (deliver);
+       }
+    }
+       
     if (resp.status>=500 && resp.status<=599) {
        set resp.http.Content-Type = "text/html; charset=utf-8";
        set resp.http.Retry-After = "5";
        set resp.http.Cache-Control = "Cache-Control: max-age=60";
-
-       if (req.url ~ "/(esi|sitemap|rss)" || req.url ~  "(?i)\.(pdf|asc|dat|txt|doc|xls|ppt|tgz|csv|png|gif|jpeg|jpg|ico|swf|css|js)(\?.*)?$") {
-          synthetic({"<span class="varnish_error_info">CERROR:"}+resp.status+{"</span>"});
-          return (deliver);
-       }
 
        call client_error;
        return (deliver);
