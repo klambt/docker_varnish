@@ -45,6 +45,11 @@ sub normalise_requests {
 	       set req.url = regsub(req.url, "(\?|&|\%3F)$", "");
 	    }
 
+
+            if (req.url ~ "-mc-([0-9a-f]{32})\.(jpg|jpeg|png|gif)$") {
+                set req.url = regsub(req.url, "-mc-([0-9a-f]{32})", "");
+            }
+
 	    // Always cache the following file types for all users. This list of extensions
 	    // appears twice, once here and again in vcl_fetch so make sure you edit both
 	    // and keep them equal.
